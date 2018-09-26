@@ -1,4 +1,4 @@
-{ ...
+{ isTravis ? false
 }:
 
 let
@@ -6,4 +6,6 @@ let
     inherit (import path { configuration = ./stub-system/configuration.nix; }) system;
   };
 in
-genJobs <nixpkgs/nixos>
+genJobs <nixpkgs/nixos> // (import <nixpkgs> {}).lib.optionalAttrs isTravis {
+  travisOrder = [ "system" ];
+}

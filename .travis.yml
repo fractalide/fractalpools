@@ -1,0 +1,7 @@
+language: nix
+
+script:
+ - ./support/utils/nix-build-travis-fold.sh -I tezos-stakepool=$PWD release.nix
+
+os:
+ - linux
