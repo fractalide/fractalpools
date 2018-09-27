@@ -1,5 +1,5 @@
 (import <nixpkgs> {}).fetchgit {
-  url = "https://gitlab.com/obsidian.systems/tezos-baking-platform";
-  rev = "c42090c4a46e980b063107e6e4cca0b68caa54b7";
-  sha256 = "1c52kkb8a6avd5mfwb4v8szfi9h8wagkh16348lmmgwax1z71xqa";
+  url = "https://gitlab.com/clacke/tezos-baking-platform";
+  rev = "cd102cc83edc456a62b0daa8c48c5ad92c4eca05";
+  sha256 = "1366mqfjbigr916lrw9yiaf9lnw8pgdx4k6qsggqcn8093c0s8l1";
 }

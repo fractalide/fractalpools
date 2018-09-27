@@ -6,7 +6,7 @@ set -u
 set -o pipefail
 
 baseurl=https://gitlab.com
-repo=obsidian.systems/tezos-baking-platform
+repo=clacke/tezos-baking-platform
 branch=refs/heads/develop
 
 SCRIPT_NAME=${BASH_SOURCE[0]##*/}
