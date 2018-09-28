@@ -43,6 +43,7 @@ in
 {
   options = {
     services.tezos.nodes = mkOption {
+      default = [];
       type = types.listOf tezosNode;
       description = "List of Tezos nodes";
     };
