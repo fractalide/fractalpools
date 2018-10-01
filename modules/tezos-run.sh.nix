@@ -20,5 +20,5 @@ peerArgs=$(${curl}/bin/curl -s '${tzscanUrl}' | ${gnugrep}/bin/grep -Eo '::ffff:
   ${gnused}/bin/sed -e 's/::ffff://' | ${coreutils}/bin/sort -u |
   ${findutils}/bin/xargs ${coreutils}/bin/printf -- '--peer=%s ')
 exec ${kit}/bin/tezos-node run --data-dir "${configDir}" --rpc-addr localhost:${toString (8732 + index)} \
-  --connections 10 $peerArgs
+  --net-addr :${toString (9732 + index)} --connections 10 $peerArgs
 ''
