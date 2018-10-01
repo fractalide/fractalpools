@@ -53,7 +53,7 @@ let
         inherit (pkgs) coreutils curl findutils gnugrep gnused;
       };
       wantedBy = [ "multi-user.target" ];
-      requires = [ init-name ];
+      wants = [ "${init-name}.service" ];
     };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
