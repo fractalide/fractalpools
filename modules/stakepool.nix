@@ -53,6 +53,7 @@ let
         inherit (pkgs) coreutils curl findutils gnugrep gnused;
       };
       wantedBy = [ "multi-user.target" ];
+      after = [ "${init-name}.service" ];
       wants = [ "${init-name}.service" ];
     };
   in
