@@ -21,24 +21,45 @@ let
       description = "Whether to configure and run baking and endorsing";
     };
   };};
+  tzscanUrls = let path = "v1/network?state=running&p=0&number=50"; in {
+    alphanet = "http://alphanet-api.tzscan.io/${path}";
+    mainnet = "http://api2.tzscan.io/${path}";
+    zeronet = "http://zeronet-api.tzscan.io/${path}";
+  };
   makeServices = nodes: makeServiceEntries 0 nodes {};
   makeServiceEntries = index: nodes: done: if nodes == [] then done else let
     current = builtins.head nodes;
-    name = "tezos-${current.network}-init-${toString index}";
-    value = {
+    tzscanUrl = tzscanUrls."${current.network}";
+    init-name = "tezos-${current.network}-init-${toString index}";
+    init-value = {
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
         inherit (tezos-baking-platform.tezos."${current.network}") kit;
         inherit (current) configDir;
       };
-      wantedBy = [ "multi-user.target" ];  # Only until we get other units in here depending on it
       after = [ "local-fs.target" ];
       serviceConfig = {
         Type = "oneshot";
+        RemainAfterExit = true;
       };
     };
+    run-name = "tezos-${current.network}-run-${toString index}";
+    run-value = {
+      description = "Tezos ${current.network} node";
+      script = import ./tezos-run.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit (current) configDir;
+        inherit index tzscanUrl;
+        inherit (pkgs) coreutils curl findutils gnugrep gnused;
+      };
+      wantedBy = [ "multi-user.target" ];
+      requires = [ init-name ];
+    };
   in
-    makeServiceEntries (index + 1) (builtins.tail nodes) (done // { "${name}" = value; });
+    makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
+      "${init-name}" = init-value;
+      "${run-name}" = run-value;
+    });
 in
 {
   options = {
