@@ -49,7 +49,8 @@ let
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
         inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit (current) configDir;
+        inherit (current) configDir user;
+        inherit (pkgs) runit;
       };
       after = [ "local-fs.target" ];
       serviceConfig = {
@@ -69,6 +70,7 @@ let
       wantedBy = [ "multi-user.target" ];
       after = [ "${init-name}.service" ];
       wants = [ "${init-name}.service" ];
+      serviceConfig.User = current.user;
     };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
