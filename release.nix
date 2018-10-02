@@ -2,14 +2,15 @@
 }:
 
 let
-  genJobs = path: {
-    inherit (import path { configuration = ./stub-system/configuration.nix; }) system;
+  genJobs = nixpkgsPath: let pkgs = import nixpkgsPath {}; in {
+    inherit (import "${nixpkgsPath}/nixos" {
+      configuration = import ./stub-system/configuration.nix { inherit pkgs; };}) system;
   };
 in
-genJobs "${(import ./pins/nixpkgs)}/nixos" // {
-  unstable = genJobs <nixpkgs/nixos>;
-  oldstable = genJobs <nixos-oldstable/nixos>;
-  stable = genJobs <nixos-stable/nixos>;
+genJobs (import ./pins/nixpkgs) // {
+  unstable = genJobs <nixpkgs>;
+  oldstable = genJobs <nixos-oldstable>;
+  stable = genJobs <nixos-stable>;
 } // (import <nixpkgs> {}).lib.optionalAttrs isTravis {
   travisOrder = [ "system" ];
 }

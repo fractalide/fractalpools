@@ -1,14 +1,16 @@
-{ config, lib, pkgs, ...  }:
+{ config, lib, ... }:
+
+let pkgs_ = import ../pins/nixpkgs {}; in
 
 with lib;
 
 let
   cfg = config.services.tezos;
-  tezos-baking-platform = pkgs.callPackage (import ../pins/tezos-baking-platform) {};
   tezosNode = types.submodule { options = {
     network = mkOption {
       default = "alphanet";
-      type = types.enum (builtins.attrNames tezos-baking-platform.tezos);
+      type = let tezos-baking-platform = import (import ../pins/tezos-baking-platform) {}; in
+        types.enum (builtins.attrNames tezos-baking-platform.tezos);
       description = "Which tezos network to run on";
     };
     configDir = mkOption {
@@ -20,6 +22,10 @@ let
       type = types.bool;
       description = "Whether to configure and run baking and endorsing";
     };
+    pkgs = mkOption {
+      default = pkgs_;
+      description = "The nixpkgs to be used for building tools.";
+    };
   };};
   tzscanUrls = let path = "v1/network?state=running&p=0&number=50"; in {
     alphanet = "http://alphanet-api.tzscan.io/${path}";
@@ -30,6 +36,8 @@ let
   makeServiceEntries = index: nodes: done: if nodes == [] then done else let
     current = builtins.head nodes;
     tzscanUrl = tzscanUrls."${current.network}";
+    pkgs = current.pkgs;
+    tezos-baking-platform = pkgs.callPackage (import ../pins/tezos-baking-platform) {};
     init-name = "tezos-${current.network}-init-${toString index}";
     init-value = {
       description = "Tezos ${current.network} initialization";
@@ -73,7 +81,7 @@ in
   config = lib.mkIf (cfg.nodes != []) {
     systemd.services = makeServices cfg.nodes;
     assertions = [
-      { assertion = pkgs.stdenv.isLinux; message = "Service only defined for Linux systems."; }
+      { assertion = all (node: node.pkgs.stdenv.isLinux) cfg.nodes; message = "Service only defined for Linux systems."; }
     ];
   };
 }
