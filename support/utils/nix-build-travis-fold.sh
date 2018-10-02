@@ -24,7 +24,7 @@ function main() {
 function build() {
   local nixpkgs_paths=()
   if local nixpkgs_path=$(nix-instantiate --eval -E 'builtins.toString <nixpkgs>'); then
-    nixpkgs_paths+=( -I nixpkgs="$(eval "readlink $nixpkgs_path")" )
+    nixpkgs_paths+=( -I nixpkgs="$(eval "readlink -e $nixpkgs_path")" )
   fi
 
   nix-build --fallback --option restrict-eval true --arg isTravis true \
