@@ -10,7 +10,7 @@ set -u
 set -o pipefail
 
 mkdir -p "${configDir}"
-chown -R "${user}" "${configDir}"
+chown -R "${user}": "${configDir}"
 chmod 700 "${configDir}"
 
 if [ -e "${configDir}/identity.json" ]; then exit 0; fi
