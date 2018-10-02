@@ -6,6 +6,7 @@ with lib;
 
 let
   cfg = config.services.tezos;
+  defaultUser = "tezos";
   tezosNode = types.submodule { options = {
     network = mkOption {
       default = "alphanet";
@@ -25,6 +26,11 @@ let
     pkgs = mkOption {
       default = pkgs_;
       description = "The nixpkgs to be used for building tools.";
+    };
+    user = mkOption {
+      default = defaultUser;
+      type = types.str;
+      description = "The user under which to run the service. If left to the default, the user will be created automatically, otherwise it needs to be explicitly created.";
     };
   };};
   tzscanUrls = let path = "v1/network?state=running&p=0&number=50"; in {
@@ -80,6 +86,15 @@ in
   };
   config = lib.mkIf (cfg.nodes != []) {
     systemd.services = makeServices cfg.nodes;
+    users = lib.mkIf (any (node: node.user == defaultUser) cfg.nodes) {
+      groups."${defaultUser}" = {};
+      users."${defaultUser}" = {
+        description = "Tezos node service";
+        group = "${defaultUser}";
+        isSystemUser = true;
+      };
+    };
+
     assertions = [
       { assertion = all (node: node.pkgs.stdenv.isLinux) cfg.nodes; message = "Service only defined for Linux systems."; }
     ];
