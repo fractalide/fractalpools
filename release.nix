@@ -3,10 +3,13 @@
 
 let
   genJobs = nixpkgs: nixos: let
-    pkgs = import nixpkgs {};
-    os = import nixos { configuration = import ./stub-system/configuration.nix { inherit pkgs; }; };
+    pkgs = if nixpkgs == null then null else import nixpkgs {};
+    os = import nixos {
+      configuration = import ./stub-system/configuration.nix (lib.optionalAttrs (pkgs != null) { inherit pkgs; });
+    };
   in
     { inherit (os) system; };
+  inherit (import pinnedNixpkgs {}) lib;
   pinnedNixpkgs = import ./pins/nixpkgs;
   pinnedNixos = (import pinnedNixpkgs {}).runCommand "nixos" { inherit pinnedNixpkgs; } ''
     mkdir $out
@@ -16,7 +19,7 @@ let
     EOF
   '';
 in
-genJobs pinnedNixpkgs pinnedNixos // {
+genJobs null pinnedNixos // {
   unstable = genJobs <nixpkgs> <nixpkgs/nixos>;
   oldstable = genJobs <nixos-oldstable> <nixos-oldstable/nixos>;
   stable = genJobs <nixos-stable> <nixos-stable/nixos>;
