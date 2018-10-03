@@ -1,6 +1,6 @@
 { config, lib, ... }:
 
-let pkgs_ = import ../pins/nixpkgs {}; in
+let pkgs_ = import (import ../pins/nixpkgs) {}; in
 
 with lib;
 
