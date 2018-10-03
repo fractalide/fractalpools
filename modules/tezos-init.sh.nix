@@ -1,4 +1,6 @@
-{ configDir
+{ bakerDir
+, baking
+, configDir
 , kit
 , runit
 , user
@@ -12,6 +14,12 @@ set -o pipefail
 mkdir -p "${configDir}"
 chown -R "${user}": "${configDir}"
 chmod 700 "${configDir}"
+
+${if baking then ''
+  mkdir -p "${bakerDir}"
+  chown -R "${user}": "${bakerDir}"
+  chmod 700 "${bakerDir}"
+'' else ""}
 
 if [ -e "${configDir}/identity.json" ]; then exit 0; fi
 

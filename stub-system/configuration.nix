@@ -11,9 +11,10 @@ let inherit (import (import ../pins/nixpkgs) {}) lib; in
   boot.isContainer = true;
 
   services.tezos.nodes = [
-    ({ configDir = "/etc/nixos/secret/tezos-alphanet"; } //
+    (rec { configDir = "/etc/nixos/secret/tezos-alphanet"; bakerDir = "${configDir}/baker"; } //
       lib.optionalAttrs (pkgs != null) { inherit pkgs; })
-    ({ configDir = "/etc/nixos/secret/tezos-mainnet"; network = "mainnet"; } //
+    (rec { configDir = "/etc/nixos/secret/tezos-mainnet"; bakerDir = "${configDir}/baker";
+           network = "mainnet"; } //
       lib.optionalAttrs (pkgs != null) { inherit pkgs; })
   ];
 }
