@@ -14,6 +14,15 @@ let
         types.enum (builtins.attrNames tezos-baking-platform.tezos);
       description = "Which tezos network to run on";
     };
+    bakerAddressAlias = mkOption {
+      default = "baker";
+      type = types.str;
+      description = "The alias of the implicit address used by the baker.";
+    };
+    bakerDir = mkOption {
+      type = types.str;
+      description = "Where to store baker state.";
+    };
     configDir = mkOption {
       type = types.str;
       description = "Where to store node state, e.g. identity secret, entire blockchain.";
@@ -49,7 +58,8 @@ let
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
         inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit (current) configDir user;
+        inherit (current) bakerAddressAlias bakerDir configDir user;
+        baking = current.baking.enable;
         inherit (pkgs) runit;
       };
       after = [ "local-fs.target" ];
@@ -72,10 +82,53 @@ let
       wants = [ "${init-name}.service" ];
       serviceConfig.User = current.user;
     };
+    accuser-name = "tezos-${current.network}-accuser-${toString index}";
+    accuser-value = {
+      description = "Tezos ${current.network} accuser";
+      script = import ./tezos-accuser.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit index;
+        inherit (current) bakerDir;
+      };
+      wantedBy = [ "multi-user.target" ];
+      after = [ "${run-name}.service" ];
+      wants = [ "${run-name}.service" ];
+      serviceConfig.User = current.user;
+    };
+    baker-name = "tezos-${current.network}-baker-${toString index}";
+    baker-value = {
+      description = "Tezos ${current.network} baker";
+      script = import ./tezos-baker.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit index;
+        inherit (current) bakerAddressAlias bakerDir configDir;
+      };
+      wantedBy = [ "multi-user.target" ];
+      after = [ "${run-name}.service" ];
+      wants = [ "${run-name}.service" ];
+      serviceConfig.User = current.user;
+    };
+    endorser-name = "tezos-${current.network}-endorser-${toString index}";
+    endorser-value = {
+      description = "Tezos ${current.network} endorser";
+      script = import ./tezos-endorser.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit index;
+        inherit (current) bakerAddressAlias bakerDir;
+      };
+      wantedBy = [ "multi-user.target" ];
+      after = [ "${run-name}.service" ];
+      wants = [ "${run-name}.service" ];
+      serviceConfig.User = current.user;
+    };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
       "${init-name}" = init-value;
       "${run-name}" = run-value;
+    } // lib.optionalAttrs current.baking.enable {
+      "${accuser-name}" = accuser-value;
+      "${baker-name}" = baker-value;
+      "${endorser-name}" = endorser-value;
     });
 in
 {
@@ -98,7 +151,7 @@ in
     };
 
     assertions = [
-      { assertion = all (node: node.pkgs.stdenv.isLinux) cfg.nodes; message = "Service only defined for Linux systems."; }
+      { assertion = all (node: node.pkgs.stdenv.isLinux) cfg.nodes; message = "Services defined only for Linux systems."; }
     ];
   };
 }
