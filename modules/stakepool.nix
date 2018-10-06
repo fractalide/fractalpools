@@ -14,6 +14,11 @@ let
         types.enum (builtins.attrNames tezos-baking-platform.tezos);
       description = "Which tezos network to run on";
     };
+    bakerAddressAlias = mkOption {
+      default = "baker";
+      type = types.str;
+      description = "The alias of the implicit address used by the baker.";
+    };
     bakerDir = mkOption {
       type = types.str;
       description = "Where to store baker state.";
@@ -53,7 +58,7 @@ let
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
         inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit (current) bakerDir configDir user;
+        inherit (current) bakerAddressAlias bakerDir configDir user;
         baking = current.baking.enable;
         inherit (pkgs) runit;
       };
@@ -83,7 +88,7 @@ let
       script = import ./tezos-baker.sh.nix {
         inherit (tezos-baking-platform.tezos."${current.network}") kit;
         inherit index;
-        inherit (current) bakerDir configDir;
+        inherit (current) bakerAddressAlias bakerDir configDir;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${run-name}.service" ];

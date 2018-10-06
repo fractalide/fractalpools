@@ -1,4 +1,5 @@
-{ bakerDir
+{ bakerAddressAlias
+, bakerDir
 , baking
 , configDir
 , kit
@@ -21,6 +22,10 @@ ${if baking then ''
   mkdir -p "${bakerDir}"
   chown -R "${user}": "${bakerDir}"
   chmod 700 "${bakerDir}"
+  if ! ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '; then
+    ${kit}/bin/tezos-client --base-dir "${bakerDir}" gen keys "${bakerAddressAlias}"
+    ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '
+  fi
 '' else ""}
 
 if [ -e "${configDir}/identity.json" ]; then exit 0; fi
