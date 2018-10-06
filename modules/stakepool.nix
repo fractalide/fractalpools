@@ -82,6 +82,19 @@ let
       wants = [ "${init-name}.service" ];
       serviceConfig.User = current.user;
     };
+    accuser-name = "tezos-${current.network}-accuser-${toString index}";
+    accuser-value = {
+      description = "Tezos ${current.network} accuser";
+      script = import ./tezos-accuser.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit index;
+        inherit (current) bakerDir;
+      };
+      wantedBy = [ "multi-user.target" ];
+      after = [ "${run-name}.service" ];
+      wants = [ "${run-name}.service" ];
+      serviceConfig.User = current.user;
+    };
     baker-name = "tezos-${current.network}-baker-${toString index}";
     baker-value = {
       description = "Tezos ${current.network} baker";
@@ -95,12 +108,27 @@ let
       wants = [ "${run-name}.service" ];
       serviceConfig.User = current.user;
     };
+    endorser-name = "tezos-${current.network}-endorser-${toString index}";
+    endorser-value = {
+      description = "Tezos ${current.network} endorser";
+      script = import ./tezos-endorser.sh.nix {
+        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit index;
+        inherit (current) bakerAddressAlias bakerDir;
+      };
+      wantedBy = [ "multi-user.target" ];
+      after = [ "${run-name}.service" ];
+      wants = [ "${run-name}.service" ];
+      serviceConfig.User = current.user;
+    };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
       "${init-name}" = init-value;
       "${run-name}" = run-value;
     } // lib.optionalAttrs current.baking.enable {
+      "${accuser-name}" = accuser-value;
       "${baker-name}" = baker-value;
+      "${endorser-name}" = endorser-value;
     });
 in
 {
