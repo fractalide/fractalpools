@@ -11,6 +11,8 @@ set -e
 set -u
 set -o pipefail
 
+export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=y
+
 mkdir -p "${configDir}"
 chown -R "${user}": "${configDir}"
 chmod 700 "${configDir}"
