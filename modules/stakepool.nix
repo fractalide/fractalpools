@@ -50,14 +50,19 @@ let
   makeServices = nodes: makeServiceEntries 0 nodes {};
   makeServiceEntries = index: nodes: done: if nodes == [] then done else let
     current = builtins.head nodes;
+    inherit (tezos-baking-platform.tezos."${current.network}") kit;
     tzscanUrl = tzscanUrls."${current.network}";
+    monitorBootstrapped = pkgs.writeScript "monitor-bootstrapped.sh" (pkgs.callPackage ./monitor-bootstrapped.sh.nix {
+      inherit kit index;
+      inherit (current) bakerDir;
+    });
     pkgs = current.pkgs;
     tezos-baking-platform = pkgs.callPackage (import ../pins/tezos-baking-platform) {};
     init-name = "tezos-${current.network}-init-${toString index}";
     init-value = {
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
-        inherit (tezos-baking-platform.tezos."${current.network}") kit;
+        inherit kit;
         inherit (current) bakerAddressAlias bakerDir configDir user;
         baking = current.baking.enable;
         inherit (pkgs) runit;
@@ -72,54 +77,65 @@ let
     run-value = {
       description = "Tezos ${current.network} node";
       script = import ./tezos-run.sh.nix {
-        inherit (tezos-baking-platform.tezos."${current.network}") kit;
         inherit (current) configDir;
-        inherit index tzscanUrl;
+        inherit index kit tzscanUrl;
         inherit (pkgs) coreutils curl findutils gnugrep gnused;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${init-name}.service" ];
       wants = [ "${init-name}.service" ];
-      serviceConfig.User = current.user;
+      serviceConfig = {
+        Restart = "always";
+        User = current.user;
+      };
     };
     accuser-name = "tezos-${current.network}-accuser-${toString index}";
     accuser-value = {
       description = "Tezos ${current.network} accuser";
       script = import ./tezos-accuser.sh.nix {
-        inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit index;
+        inherit index kit;
         inherit (current) bakerDir;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${run-name}.service" ];
       wants = [ "${run-name}.service" ];
-      serviceConfig.User = current.user;
+      serviceConfig = {
+        ExecStartPre = monitorBootstrapped;
+        Restart = "always";
+        User = current.user;
+      };
     };
     baker-name = "tezos-${current.network}-baker-${toString index}";
     baker-value = {
       description = "Tezos ${current.network} baker";
       script = import ./tezos-baker.sh.nix {
-        inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit index;
+        inherit index kit;
         inherit (current) bakerAddressAlias bakerDir configDir;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${run-name}.service" ];
       wants = [ "${run-name}.service" ];
-      serviceConfig.User = current.user;
+      serviceConfig = {
+        ExecStartPre = monitorBootstrapped;
+        Restart = "always";
+        User = current.user;
+      };
     };
     endorser-name = "tezos-${current.network}-endorser-${toString index}";
     endorser-value = {
       description = "Tezos ${current.network} endorser";
       script = import ./tezos-endorser.sh.nix {
-        inherit (tezos-baking-platform.tezos."${current.network}") kit;
-        inherit index;
+        inherit index kit;
         inherit (current) bakerAddressAlias bakerDir;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${run-name}.service" ];
       wants = [ "${run-name}.service" ];
-      serviceConfig.User = current.user;
+      serviceConfig = {
+        ExecStartPre = monitorBootstrapped;
+        Restart = "always";
+        User = current.user;
+      };
     };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
