@@ -23,7 +23,7 @@ ${if baking then ''
   chown -R "${user}": "${bakerDir}"
   chmod 700 "${bakerDir}"
   if ! ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '; then
-    ${kit}/bin/tezos-client --base-dir "${bakerDir}" gen keys "${bakerAddressAlias}"
+    ${runit}/bin/chpst -u "${user}" ${kit}/bin/tezos-client --base-dir "${bakerDir}" gen keys "${bakerAddressAlias}"
     ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '
   fi
 '' else ""}
