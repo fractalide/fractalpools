@@ -23,6 +23,10 @@ let
       type = types.str;
       description = "Where to store baker state.";
     };
+    bakerStatsExportDir = mkOption {
+      type = types.str;
+      description = "Where to store exported baker stats.";
+    };
     configDir = mkOption {
       type = types.str;
       description = "Where to store node state, e.g. identity secret, entire blockchain.";
@@ -63,7 +67,7 @@ let
       description = "Tezos ${current.network} initialization";
       script = import ./tezos-init.sh.nix {
         inherit kit;
-        inherit (current) bakerAddressAlias bakerDir configDir user;
+        inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir configDir user;
         baking = current.baking.enable;
         inherit (pkgs) runit;
       };
@@ -137,6 +141,16 @@ let
         User = current.user;
       };
     };
+    stats-name = "tezos-${current.network}-baker-stats-${toString index}";
+    stats-value = {
+      description = "Tezos ${current.network} baker stats export";
+      script = import ./tezos-baker-stats.sh.nix {
+        inherit index kit;
+        inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
+        inherit (pkgs) gawk;
+      };
+      startAt = "*:07";
+    };
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
       "${init-name}" = init-value;
@@ -145,6 +159,7 @@ let
       "${accuser-name}" = accuser-value;
       "${baker-name}" = baker-value;
       "${endorser-name}" = endorser-value;
+      "${stats-name}" = stats-value;
     });
 in
 {

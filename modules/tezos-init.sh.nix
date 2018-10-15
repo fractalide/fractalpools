@@ -1,5 +1,6 @@
 { bakerAddressAlias
 , bakerDir
+, bakerStatsExportDir
 , baking
 , configDir
 , kit
@@ -26,6 +27,9 @@ ${if baking then ''
     ${runit}/bin/chpst -u "${user}" ${kit}/bin/tezos-client --base-dir "${bakerDir}" gen keys "${bakerAddressAlias}"
     ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '
   fi
+
+  mkdir -p "${bakerStatsExportDir}"
+  chown -R "${user}": "${bakerStatsExportDir}"
 '' else ""}
 
 if [ -e "${configDir}/identity.json" ]; then exit 0; fi
