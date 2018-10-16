@@ -19,6 +19,10 @@ mkdir -p "${configDir}"
 chown -R "${user}": "${configDir}"
 chmod 700 "${configDir}"
 
+if ! [ -e "${configDir}/identity.json" ]; then
+  ${runit}/bin/chpst -u "${user}" ${kit}/bin/tezos-node identity generate --data-dir "${configDir}"
+fi
+
 ${if baking then ''
   mkdir -p "${bakerDir}"
   chown -R "${user}": "${bakerDir}"
@@ -31,8 +35,4 @@ ${if baking then ''
   mkdir -p "${bakerStatsExportDir}"
   chown -R "${user}": "${bakerStatsExportDir}"
 '' else ""}
-
-if [ -e "${configDir}/identity.json" ]; then exit 0; fi
-
-exec ${runit}/bin/chpst -u "${user}" ${kit}/bin/tezos-node identity generate --data-dir "${configDir}"
 ''
