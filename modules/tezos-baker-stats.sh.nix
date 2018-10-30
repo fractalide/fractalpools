@@ -38,9 +38,18 @@ while true; do
     client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
     mv "$block_dir".new "$block_dir"
   fi
-  break
+
+  cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
+  rm -f "${bakerStatsExportDir}"/$cycle
+  ln -s $block "${bakerStatsExportDir}"/$cycle
+  (( cycle == 0 )) && break
+
+  cycle_position=$(jq -r .cycle_position < "$block_dir"/current_level.json)
+  block=$(client rpc get /chains/main/blocks/$block~$((cycle_position + 1))/hash | jq . -r)
+  blocks+=( $block )
 done
 
+printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
 
 for i in delegate baking_rights endorsing_rights; do
   rm -f "${bakerStatsExportDir}"/$i.json
