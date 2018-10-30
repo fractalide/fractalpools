@@ -3,6 +3,7 @@
 , bakerStatsExportDir
 , gawk
 , index
+, jq
 , kit
 }:
 
@@ -17,13 +18,32 @@ function client() {
   ${kit}/bin/tezos-client --base-dir '${bakerDir}' --addr localhost --port ${toString (8732 + index)} "$@"
 }
 
-address=$(client show address "${bakerAddressAlias}" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
+function jq() {
+  ${jq}/bin/jq "$@"
+}
 
-client rpc get /chains/main/blocks/head/context/delegates/$address > "${bakerStatsExportDir}"/delegate.json.new
-client rpc get /chains/main/blocks/head/helpers/baking_rights?delegate=$address > "${bakerStatsExportDir}"/baking_rights.json.new
-client rpc get /chains/main/blocks/head/helpers/endorsing_rights?delegate=$address > "${bakerStatsExportDir}"/endorsing_rights.json.new
+address=$(client show address "${bakerAddressAlias}" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
+head=$(client rpc get /chains/main/blocks/head/hash | jq . -r)
+
+block=$head
+blocks=( $head )
+
+while true; do
+  block_dir="${bakerStatsExportDir}"/$block
+  if [ ! -d "$block_dir" ]; then
+    mkdir -p "$block_dir".new
+    client rpc get /chains/main/blocks/$block/helpers/current_level > "$block_dir".new/current_level.json
+    client rpc get /chains/main/blocks/$block/context/delegates/$address > "$block_dir".new/delegate.json
+    client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
+    client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
+    mv "$block_dir".new "$block_dir"
+  fi
+  break
+done
+
 
 for i in delegate baking_rights endorsing_rights; do
-  mv "${bakerStatsExportDir}"/$i.json{.new,}
+  rm -f "${bakerStatsExportDir}"/$i.json
+  ln -s $head/$i.json "${bakerStatsExportDir}"/$i.json
 done
 ''
