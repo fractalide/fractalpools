@@ -11,6 +11,8 @@ set -e
 set -u
 set -o pipefail
 
+export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=y
+
 function client() {
   ${kit}/bin/tezos-client --base-dir '${bakerDir}' --addr localhost --port ${toString (8732 + index)} "$@"
 }
