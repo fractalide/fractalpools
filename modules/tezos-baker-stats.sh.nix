@@ -29,7 +29,7 @@ block=$head
 blocks=( $head )
 
 while true; do
-  block_dir="${bakerStatsExportDir}"/$block
+  block_dir="${bakerStatsExportDir}"/block/$block
   if [ ! -d "$block_dir" ]; then
     mkdir -p "$block_dir".new
     client rpc get /chains/main/blocks/$block/helpers/current_level > "$block_dir".new/current_level.json
@@ -40,8 +40,9 @@ while true; do
   fi
 
   cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
-  rm -f "${bakerStatsExportDir}"/$cycle
-  ln -s $block "${bakerStatsExportDir}"/$cycle
+  rm -f "${bakerStatsExportDir}"/cycle/$cycle
+  mkdir -p "${bakerStatsExportDir}"/cycle
+  ln -s ../block/$block "${bakerStatsExportDir}"/cycle/$cycle
   (( cycle == 0 )) && break
 
   cycle_position=$(jq -r .cycle_position < "$block_dir"/current_level.json)
@@ -53,6 +54,6 @@ printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
 
 for i in delegate baking_rights endorsing_rights; do
   rm -f "${bakerStatsExportDir}"/$i.json
-  ln -s $head/$i.json "${bakerStatsExportDir}"/$i.json
+  ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
 done
 ''
