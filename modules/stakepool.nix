@@ -147,7 +147,7 @@ let
       script = import ./tezos-baker-stats.sh.nix {
         inherit index kit;
         inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
-        inherit (pkgs) gawk;
+        inherit (pkgs) gawk jq;
       };
       startAt = "*:07";
     };
