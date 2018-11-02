@@ -5,7 +5,7 @@ let inherit (import (import ../pins/nixpkgs) {}) lib; in
 
 {
   imports = [
-    ../modules/stakepool.nix
+    ../modules
   ];
 
   boot.isContainer = true;
