@@ -1,7 +1,10 @@
 { bakerAddressAlias
 , bakerDir
 , bakerStatsExportDir
+, coreutils
+, findutils
 , gawk
+, gnugrep
 , index
 , jq
 , kit
@@ -56,4 +59,8 @@ for i in delegate baking_rights endorsing_rights; do
   rm -f "${bakerStatsExportDir}"/$i.json
   ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
 done
+
+${findutils}/bin/find "${bakerStatsExportDir}"/block -maxdepth 1 -path "${bakerStatsExportDir}/block/*" -print0 |
+  ${gnugrep}/bin/grep -zZvFf "${bakerStatsExportDir}"/blocks |
+  ${findutils}/bin/xargs -0 rm -rf
 ''
