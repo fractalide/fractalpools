@@ -39,7 +39,7 @@ delegate_default='{
   "grace_period": 77
 }'
 
-fractalpools_version=1
+fractalpools_version=2
 
 while true; do
   block_dir="${bakerStatsExportDir}"/block/$block
@@ -50,6 +50,12 @@ while true; do
     client rpc get /chains/main/blocks/$block/context/delegates/$address | ( jq . 2>/dev/null || echo "$delegate_default" ) > "$block_dir".new/delegate.json
     client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
     client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
+    echo '{}' > "$block_dir".new/stakes.json
+    for staker in $(jq -r '.delegated_contracts[]' < "$block_dir".new/delegate.json); do
+      balance=$(client rpc get /chains/main/blocks/head/context/contracts/$staker/balance)  # including the quotation marks
+      cat "$block_dir".new/stakes.json | jq ". += { \"$staker\": $balance }" > "$block_dir".new/stakes.json.new
+      mv "$block_dir".new/stakes.json.new "$block_dir".new/stakes.json
+    done
     echo $fractalpools_version > "$block_dir".new/fractalpools_version
     rm -rf "$block_dir"
     mv "$block_dir".new "$block_dir"
