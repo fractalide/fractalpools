@@ -36,7 +36,7 @@ while true; do
   if [ ! -d "$block_dir" ]; then
     mkdir -p "$block_dir".new
     client rpc get /chains/main/blocks/$block/helpers/current_level > "$block_dir".new/current_level.json
-    client rpc get /chains/main/blocks/$block/context/delegates/$address > "$block_dir".new/delegate.json
+    client rpc get /chains/main/blocks/$block/context/delegates/$address | ( jq . 2>/dev/null || echo '[]' ) > "$block_dir".new/delegate.json
     client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
     client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
     mv "$block_dir".new "$block_dir"
