@@ -150,6 +150,7 @@ let
         inherit (pkgs) gawk jq;
       };
       serviceConfig = {
+        ExecStartPre = monitorBootstrapped;
         User = current.user;
       };
       startAt = "*:07";
