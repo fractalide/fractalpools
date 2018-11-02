@@ -31,14 +31,27 @@ head=$(client rpc get /chains/main/blocks/head/hash | jq . -r)
 block=$head
 blocks=( $head )
 
+delegate_default='{
+  "balance": "0", "frozen_balance": "0", "frozen_balance_by_cycle": [],
+  "staking_balance": "0",
+  "delegated_contracts": [],
+  "delegated_balance": "0", "deactivated": false,
+  "grace_period": 77
+}'
+
+fractalpools_version=1
+
 while true; do
   block_dir="${bakerStatsExportDir}"/block/$block
-  if [ ! -d "$block_dir" ]; then
+  if [ ! -d "$block_dir" ] || [ ! -e "$block_dir"/fractalpools_version ] ||
+     (( $(cat "$block_dir"/fractalpools_version) < $fractalpools_version )); then
     mkdir -p "$block_dir".new
     client rpc get /chains/main/blocks/$block/helpers/current_level > "$block_dir".new/current_level.json
-    client rpc get /chains/main/blocks/$block/context/delegates/$address | ( jq . 2>/dev/null || echo '[]' ) > "$block_dir".new/delegate.json
+    client rpc get /chains/main/blocks/$block/context/delegates/$address | ( jq . 2>/dev/null || echo "$delegate_default" ) > "$block_dir".new/delegate.json
     client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
     client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
+    echo $fractalpools_version > "$block_dir".new/fractalpools_version
+    rm -rf "$block_dir"
     mv "$block_dir".new "$block_dir"
   fi
 
