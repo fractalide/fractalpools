@@ -149,6 +149,9 @@ let
         inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
         inherit (pkgs) gawk jq;
       };
+      serviceConfig = {
+        User = current.user;
+      };
       startAt = "*:07";
     };
   in
