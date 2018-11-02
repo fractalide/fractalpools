@@ -149,6 +149,10 @@ let
         inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
         inherit (pkgs) coreutils findutils gawk gnugrep jq;
       };
+      serviceConfig = {
+        ExecStartPre = monitorBootstrapped;
+        User = current.user;
+      };
       startAt = "*:07";
     };
   in
