@@ -44,8 +44,8 @@ fractalpools_version=2
 while true; do
   block_dir="${bakerStatsExportDir}"/block/$block
   if [ ! -d "$block_dir" ] || [ ! -e "$block_dir"/fractalpools_version ] ||
-     (( $(cat "$block_dir"/fractalpools_version) < $fractalpools_version )); then
-    mkdir -p "$block_dir".new
+     (( $(${coreutils}/bin/cat "$block_dir"/fractalpools_version) < $fractalpools_version )); then
+    ${coreutils}/bin/mkdir -p "$block_dir".new
     client rpc get /chains/main/blocks/$block/helpers/current_level > "$block_dir".new/current_level.json
     client rpc get /chains/main/blocks/$block/context/delegates/$address | ( jq . 2>/dev/null || echo "$delegate_default" ) > "$block_dir".new/delegate.json
     client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
@@ -53,18 +53,18 @@ while true; do
     echo '{}' > "$block_dir".new/stakes.json
     for staker in $(jq -r '.delegated_contracts[]' < "$block_dir".new/delegate.json); do
       balance=$(client rpc get /chains/main/blocks/head/context/contracts/$staker/balance)  # including the quotation marks
-      cat "$block_dir".new/stakes.json | jq ". += { \"$staker\": $balance }" > "$block_dir".new/stakes.json.new
-      mv "$block_dir".new/stakes.json.new "$block_dir".new/stakes.json
+      ${coreutils}/bin/cat "$block_dir".new/stakes.json | jq ". += { \"$staker\": $balance }" > "$block_dir".new/stakes.json.new
+      ${coreutils}/bin/mv "$block_dir".new/stakes.json.new "$block_dir".new/stakes.json
     done
     echo $fractalpools_version > "$block_dir".new/fractalpools_version
-    rm -rf "$block_dir"
-    mv "$block_dir".new "$block_dir"
+    ${coreutils}/bin/rm -rf "$block_dir"
+    ${coreutils}/bin/mv "$block_dir".new "$block_dir"
   fi
 
   cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
-  rm -f "${bakerStatsExportDir}"/cycle/$cycle
-  mkdir -p "${bakerStatsExportDir}"/cycle
-  ln -s ../block/$block "${bakerStatsExportDir}"/cycle/$cycle
+  ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/cycle/$cycle
+  ${coreutils}/bin/mkdir -p "${bakerStatsExportDir}"/cycle
+  ${coreutils}/bin/ln -s ../block/$block "${bakerStatsExportDir}"/cycle/$cycle
   (( cycle == 0 )) && break
 
   cycle_position=$(jq -r .cycle_position < "$block_dir"/current_level.json)
@@ -75,8 +75,8 @@ done
 printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
 
 for i in delegate baking_rights endorsing_rights; do
-  rm -f "${bakerStatsExportDir}"/$i.json
-  ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
+  ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/$i.json
+  ${coreutils}/bin/ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
 done
 
 ${findutils}/bin/find "${bakerStatsExportDir}"/block -maxdepth 1 -path "${bakerStatsExportDir}/block/*" -print0 |
