@@ -74,6 +74,28 @@ done
 
 printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
 
+for block in ''${blocks[*]}; do
+  block_dir="${bakerStatsExportDir}"/block/$block
+  cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
+  (( cycle == 0 )) && continue
+  freeze_cycle=$((cycle - 1))
+  freeze_cycle_dir="${bakerStatsExportDir}"/cycle/$freeze_cycle
+  ${coreutils}/bin/mkdir -p "$freeze_cycle_dir"
+  if [ ! -e "$freeze_cycle_dir"/frozen_balance.json ]; then
+    jq --argjson cycle $freeze_cycle '
+      if .frozen_balance_by_cycle | contains([{cycle: $cycle}]) then
+        .frozen_balance_by_cycle[] | select(.cycle == $cycle)
+      else
+       { cycle: $cycle, deposit: "0", fees: "0", rewards: "0" }
+      end
+    ' < "$block_dir"/delegate.json > "$freeze_cycle_dir"/frozen_balance.json.new
+    mv "$freeze_cycle_dir"/frozen_balance.json.new "$freeze_cycle_dir"/frozen_balance.json
+  fi
+  # fees=$(jq -r .fees < "$freeze_cycle_dir"/frozen_balance.json)
+  # rewards=$(jq -r .rewards < "$freeze_cycle_dir"/frozen_balance.json)
+  # total_rewards=$((fees + rewards))
+done
+
 for i in delegate baking_rights endorsing_rights; do
   rm -f "${bakerStatsExportDir}"/$i.json
   ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
