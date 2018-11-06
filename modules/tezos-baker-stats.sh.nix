@@ -99,12 +99,12 @@ for block in ''${blocks[*]}; do
   total_rewards=$(${tcl}/bin/tclsh <<< "puts [expr $fees + $rewards]")
   total_staking_balance=$(jq -r .staking_balance < "$snap_cycle_dir"/delegate.json)
   stakers=( $(jq -r 'keys[]' < "$snap_cycle_dir"/stakes.json) )
-  echo [] > "$freeze_cycle_dir"/rewards.json.new
+  echo '[]' > "$freeze_cycle_dir"/rewards.json.new
   for staker in ''${stakers[*]}; do
     staker_balance=$(jq -r --arg staker $staker '.[$staker]' < "$snap_cycle_dir"/stakes.json)
     staker_reward=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
     jq --arg staker $staker --arg reward $staker_reward --argjson cycle $freeze_cycle \
-      '. += [ { staker: $staker, cycle: $cycle, reward: $reward } ]'
+      '. += [ { staker: $staker, cycle: $cycle, reward: $reward } ]' \
       < "$freeze_cycle_dir"/rewards.json.new > "$freeze_cycle_dir"/rewards.json.new.new
     ${coreutils}/bin/mv "$freeze_cycle_dir"/rewards.json.new.new "$freeze_cycle_dir"/rewards.json.new
   done
