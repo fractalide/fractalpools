@@ -8,6 +8,7 @@
 , index
 , jq
 , kit
+, tcl
 }:
 
 ''
@@ -77,9 +78,11 @@ printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
 for block in ''${blocks[*]}; do
   block_dir="${bakerStatsExportDir}"/block/$block
   cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
-  (( cycle == 0 )) && continue
+  (( cycle < 8 )) && continue
   freeze_cycle=$((cycle - 1))
   freeze_cycle_dir="${bakerStatsExportDir}"/cycle/$freeze_cycle
+  snap_cycle=$((freeze_cycle - 7))
+  snap_cycle_dir="${bakerStatsExportDir}"/cycle/$snap_cycle
   ${coreutils}/bin/mkdir -p "$freeze_cycle_dir"
   if [ ! -e "$freeze_cycle_dir"/frozen_balance.json ]; then
     jq --argjson cycle $freeze_cycle '
@@ -89,12 +92,29 @@ for block in ''${blocks[*]}; do
        { cycle: $cycle, deposit: "0", fees: "0", rewards: "0" }
       end
     ' < "$block_dir"/delegate.json > "$freeze_cycle_dir"/frozen_balance.json.new
-    mv "$freeze_cycle_dir"/frozen_balance.json.new "$freeze_cycle_dir"/frozen_balance.json
+    ${coreutils}/bin/mv "$freeze_cycle_dir"/frozen_balance.json.new "$freeze_cycle_dir"/frozen_balance.json
   fi
-  # fees=$(jq -r .fees < "$freeze_cycle_dir"/frozen_balance.json)
-  # rewards=$(jq -r .rewards < "$freeze_cycle_dir"/frozen_balance.json)
-  # total_rewards=$((fees + rewards))
+  fees=$(jq -r .fees < "$freeze_cycle_dir"/frozen_balance.json)
+  rewards=$(jq -r .rewards < "$freeze_cycle_dir"/frozen_balance.json)
+  total_rewards=$(${tcl}/bin/tclsh <<< "puts [expr $fees + $rewards]")
+  total_staking_balance=$(jq -r .staking_balance < "$snap_cycle_dir"/delegate.json)
+  stakers=( $(jq -r 'keys[]' < "$snap_cycle_dir"/stakes.json) )
+  echo [] > "$freeze_cycle_dir"/rewards.json.new
+  for staker in ''${stakers[*]}; do
+    staker_balance=$(jq -r --arg staker $staker '.[$staker]' < "$snap_cycle_dir"/stakes.json)
+    staker_reward=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
+    jq --arg staker $staker --arg reward $staker_reward --argjson cycle $freeze_cycle \
+      '. += [ { staker: $staker, cycle: $cycle, reward: $reward } ]'
+      < "$freeze_cycle_dir"/rewards.json.new > "$freeze_cycle_dir"/rewards.json.new.new
+    ${coreutils}/bin/mv "$freeze_cycle_dir"/rewards.json.new.new "$freeze_cycle_dir"/rewards.json.new
+  done
+  ${coreutils}/bin/mv "$freeze_cycle_dir"/rewards.json.new "$freeze_cycle_dir"/rewards.json
 done
+
+printf "%s\n" ''${blocks[*]} | ${coreutils}/bin/tail -n +2 | ${coreutils}/bin/head -n -8 |
+  ${findutils}/bin/xargs printf "${bakerStatsExportDir}/block/%s/rewards.json\0" |
+  ${findutils}/bin/xargs -0 jq -s flatten > "${bakerStatsExportDir}"/rewards.json.new
+${coreutils}/bin/mv "${bakerStatsExportDir}"/rewards.json.new "${bakerStatsExportDir}"/rewards.json
 
 for i in delegate baking_rights endorsing_rights; do
   ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/$i.json

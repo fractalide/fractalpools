@@ -147,7 +147,7 @@ let
       script = import ./tezos-baker-stats.sh.nix {
         inherit index kit;
         inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
-        inherit (pkgs) coreutils findutils gawk gnugrep jq;
+        inherit (pkgs) coreutils findutils gawk gnugrep jq tcl;
       };
       serviceConfig = {
         ExecStartPre = monitorBootstrapped;
