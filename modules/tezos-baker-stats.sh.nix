@@ -40,7 +40,7 @@ delegate_default='{
   "grace_period": 77
 }'
 
-fractalpools_version=2
+fractalpools_version=3
 
 while true; do
   block_dir="${bakerStatsExportDir}"/block/$block
@@ -52,10 +52,16 @@ while true; do
     client rpc get /chains/main/blocks/$block/helpers/baking_rights?delegate=$address > "$block_dir".new/baking_rights.json
     client rpc get /chains/main/blocks/$block/helpers/endorsing_rights?delegate=$address > "$block_dir".new/endorsing_rights.json
     echo '{}' > "$block_dir".new/stakes.json
+    echo '[]' > "$block_dir".new/staker_balances.json
     for staker in $(jq -r '.delegated_contracts[]' < "$block_dir".new/delegate.json); do
       balance=$(client rpc get /chains/main/blocks/head/context/contracts/$staker/balance)  # including the quotation marks
       ${coreutils}/bin/cat "$block_dir".new/stakes.json | jq ". += { \"$staker\": $balance }" > "$block_dir".new/stakes.json.new
       ${coreutils}/bin/mv "$block_dir".new/stakes.json.new "$block_dir".new/stakes.json
+      # $balance has the quotation marks, therefore --argjson
+      jq --arg staker $staker --argjson balance $balance --argjson cycle $(jq -r .cycle < "$block_dir".new/current_level.json) \
+        '. += [ { staker: $staker, balance: $balance, cycle: $cycle } ]' \
+        < "$block_dir".new/staker_balances.json > "$block_dir".new/staker_balances.json.new
+      ${coreutils}/bin/mv "$block_dir".new/staker_balances.json.new "$block_dir".new/staker_balances.json
     done
     echo $fractalpools_version > "$block_dir".new/fractalpools_version
     ${coreutils}/bin/rm -rf "$block_dir"
@@ -83,7 +89,7 @@ for block in ''${blocks[*]}; do
   freeze_cycle_dir="${bakerStatsExportDir}"/cycle/$freeze_cycle
   snap_cycle=$((freeze_cycle - 7))
   snap_cycle_dir="${bakerStatsExportDir}"/cycle/$snap_cycle
-  reward_cycle=$((freeze_cycle + 6))
+  rewards_cycle=$((freeze_cycle + 6))
   ${coreutils}/bin/mkdir -p "$freeze_cycle_dir"
   if [ ! -e "$freeze_cycle_dir"/frozen_balance.json ]; then
     jq --argjson cycle $freeze_cycle '
@@ -103,9 +109,9 @@ for block in ''${blocks[*]}; do
   echo '[]' > "$freeze_cycle_dir"/rewards.json.new
   for staker in ''${stakers[*]}; do
     staker_balance=$(jq -r --arg staker $staker '.[$staker]' < "$snap_cycle_dir"/stakes.json)
-    staker_reward=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
-    jq --arg staker $staker --arg reward $staker_reward --argjson cycle $reward_cycle \
-      '. += [ { staker: $staker, cycle: $cycle, reward: $reward } ]' \
+    staker_rewards=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
+    jq --arg staker $staker --arg rewards $staker_rewards --argjson cycle $rewards_cycle \
+      '. += [ { staker: $staker, cycle: $cycle, rewards: $rewards } ]' \
       < "$freeze_cycle_dir"/rewards.json.new > "$freeze_cycle_dir"/rewards.json.new.new
     ${coreutils}/bin/mv "$freeze_cycle_dir"/rewards.json.new.new "$freeze_cycle_dir"/rewards.json.new
   done
@@ -116,6 +122,14 @@ printf "%s\n" ''${blocks[*]} | ${coreutils}/bin/tail -n +2 | ${coreutils}/bin/he
   ${findutils}/bin/xargs ${coreutils}/bin/printf "${bakerStatsExportDir}/block/%s/rewards.json\0" |
   ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "${bakerStatsExportDir}"/rewards.json.new
 ${coreutils}/bin/mv "${bakerStatsExportDir}"/rewards.json.new "${bakerStatsExportDir}"/rewards.json
+
+printf "%s\n" ''${blocks[*]} |
+  ${findutils}/bin/xargs ${coreutils}/bin/printf "${bakerStatsExportDir}/block/%s/staker_balances.json\0" |
+  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "${bakerStatsExportDir}"/staker_balances.json.new
+${coreutils}/bin/mv "${bakerStatsExportDir}"/staker_balances.json.new "${bakerStatsExportDir}"/staker_balances.json
+
+jq -s 'flatten | group_by([ .staker, .cycle ]) | map(add)' "${bakerStatsExportDir}"/rewards.json "${bakerStatsExportDir}"/staker_balances.json \
+  > "${bakerStatsExportDir}"/staker_data.json
 
 for i in delegate baking_rights endorsing_rights; do
   ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/$i.json
