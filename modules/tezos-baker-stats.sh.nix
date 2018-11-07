@@ -113,8 +113,8 @@ for block in ''${blocks[*]}; do
 done
 
 printf "%s\n" ''${blocks[*]} | ${coreutils}/bin/tail -n +2 | ${coreutils}/bin/head -n -8 |
-  ${findutils}/bin/xargs printf "${bakerStatsExportDir}/block/%s/rewards.json\0" |
-  ${findutils}/bin/xargs -0 jq -s flatten > "${bakerStatsExportDir}"/rewards.json.new
+  ${findutils}/bin/xargs ${coreutils}/bin/printf "${bakerStatsExportDir}/block/%s/rewards.json\0" |
+  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "${bakerStatsExportDir}"/rewards.json.new
 ${coreutils}/bin/mv "${bakerStatsExportDir}"/rewards.json.new "${bakerStatsExportDir}"/rewards.json
 
 for i in delegate baking_rights endorsing_rights; do
@@ -124,5 +124,5 @@ done
 
 ${findutils}/bin/find "${bakerStatsExportDir}"/block -maxdepth 1 -path "${bakerStatsExportDir}/block/*" -print0 |
   ${gnugrep}/bin/grep -zZvFf "${bakerStatsExportDir}"/blocks |
-  ${findutils}/bin/xargs -0 rm -rf
+  ${findutils}/bin/xargs -0 ${coreutils}/bin/rm -rf
 ''
