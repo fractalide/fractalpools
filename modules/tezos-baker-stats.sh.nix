@@ -83,6 +83,7 @@ for block in ''${blocks[*]}; do
   freeze_cycle_dir="${bakerStatsExportDir}"/cycle/$freeze_cycle
   snap_cycle=$((freeze_cycle - 7))
   snap_cycle_dir="${bakerStatsExportDir}"/cycle/$snap_cycle
+  reward_cycle=$((freeze_cycle + 6))
   ${coreutils}/bin/mkdir -p "$freeze_cycle_dir"
   if [ ! -e "$freeze_cycle_dir"/frozen_balance.json ]; then
     jq --argjson cycle $freeze_cycle '
@@ -103,7 +104,7 @@ for block in ''${blocks[*]}; do
   for staker in ''${stakers[*]}; do
     staker_balance=$(jq -r --arg staker $staker '.[$staker]' < "$snap_cycle_dir"/stakes.json)
     staker_reward=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
-    jq --arg staker $staker --arg reward $staker_reward --argjson cycle $freeze_cycle \
+    jq --arg staker $staker --arg reward $staker_reward --argjson cycle $reward_cycle \
       '. += [ { staker: $staker, cycle: $cycle, reward: $reward } ]' \
       < "$freeze_cycle_dir"/rewards.json.new > "$freeze_cycle_dir"/rewards.json.new.new
     ${coreutils}/bin/mv "$freeze_cycle_dir"/rewards.json.new.new "$freeze_cycle_dir"/rewards.json.new
