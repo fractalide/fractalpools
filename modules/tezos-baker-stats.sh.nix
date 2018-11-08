@@ -1,6 +1,4 @@
-{ bakerAddressAlias
-, bakerDir
-, bakerStatsExportDir
+{ bakerDir
 , coreutils
 , findutils
 , gawk
@@ -18,6 +16,14 @@ set -o pipefail
 
 export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=y
 
+if (( $# != 2 )); then
+  echo >&2 "Usage: ''${BASH_SOURCE[0]#*/} <output directory> <account address or name>"
+  exit 2
+fi
+
+outputDir=$1
+addressOrName=$2
+
 function client() {
   ${kit}/bin/tezos-client --base-dir '${bakerDir}' --addr localhost --port ${toString (8732 + index)} "$@"
 }
@@ -26,7 +32,12 @@ function jq() {
   ${jq}/bin/jq "$@"
 }
 
-address=$(client show address "${bakerAddressAlias}" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
+if (( ''${#addressOrName} == 36 )) && [[ ${addressOrName:0:3} = "tz1" ]]; then
+  address=$(client show address "$addressOrName" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
+else
+  address=$addressOrName
+fi
+
 head=$(client rpc get /chains/main/blocks/head/hash | jq . -r)
 
 block=$head
@@ -43,7 +54,7 @@ delegate_default='{
 fractalpools_version=3
 
 while true; do
-  block_dir="${bakerStatsExportDir}"/block/$block
+  block_dir="$outputDir"/block/$block
   if [ ! -d "$block_dir" ] || [ ! -e "$block_dir"/fractalpools_version ] ||
      (( $(${coreutils}/bin/cat "$block_dir"/fractalpools_version) < $fractalpools_version )); then
     ${coreutils}/bin/mkdir -p "$block_dir".new
@@ -69,9 +80,9 @@ while true; do
   fi
 
   cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
-  ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/cycle/$cycle
-  ${coreutils}/bin/mkdir -p "${bakerStatsExportDir}"/cycle
-  ${coreutils}/bin/ln -s ../block/$block "${bakerStatsExportDir}"/cycle/$cycle
+  ${coreutils}/bin/rm -f "$outputDir"/cycle/$cycle
+  ${coreutils}/bin/mkdir -p "$outputDir"/cycle
+  ${coreutils}/bin/ln -s ../block/$block "$outputDir"/cycle/$cycle
   (( cycle == 0 )) && break
 
   cycle_position=$(jq -r .cycle_position < "$block_dir"/current_level.json)
@@ -79,16 +90,16 @@ while true; do
   blocks+=( $block )
 done
 
-printf "%s\n" "''${blocks[@]}" > "${bakerStatsExportDir}"/blocks
+printf "%s\n" "''${blocks[@]}" > "$outputDir"/blocks
 
 for block in ''${blocks[*]}; do
-  block_dir="${bakerStatsExportDir}"/block/$block
+  block_dir="$outputDir"/block/$block
   cycle=$(jq -r .cycle < "$block_dir"/current_level.json)
   (( cycle < 8 )) && continue
   freeze_cycle=$((cycle - 1))
-  freeze_cycle_dir="${bakerStatsExportDir}"/cycle/$freeze_cycle
+  freeze_cycle_dir="$outputDir"/cycle/$freeze_cycle
   snap_cycle=$((freeze_cycle - 7))
-  snap_cycle_dir="${bakerStatsExportDir}"/cycle/$snap_cycle
+  snap_cycle_dir="$outputDir"/cycle/$snap_cycle
   rewards_cycle=$((freeze_cycle + 6))
   ${coreutils}/bin/mkdir -p "$freeze_cycle_dir"
   if [ ! -e "$freeze_cycle_dir"/frozen_balance.json ]; then
@@ -119,24 +130,24 @@ for block in ''${blocks[*]}; do
 done
 
 printf "%s\n" ''${blocks[*]} | ${coreutils}/bin/tail -n +2 | ${coreutils}/bin/head -n -8 |
-  ${findutils}/bin/xargs ${coreutils}/bin/printf "${bakerStatsExportDir}/block/%s/rewards.json\0" |
-  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "${bakerStatsExportDir}"/rewards.json.new
-${coreutils}/bin/mv "${bakerStatsExportDir}"/rewards.json.new "${bakerStatsExportDir}"/rewards.json
+  ${findutils}/bin/xargs ${coreutils}/bin/printf "$outputDir/block/%s/rewards.json\0" |
+  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "$outputDir"/rewards.json.new
+${coreutils}/bin/mv "$outputDir"/rewards.json.new "$outputDir"/rewards.json
 
 printf "%s\n" ''${blocks[*]} |
-  ${findutils}/bin/xargs ${coreutils}/bin/printf "${bakerStatsExportDir}/block/%s/staker_balances.json\0" |
-  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "${bakerStatsExportDir}"/staker_balances.json.new
-${coreutils}/bin/mv "${bakerStatsExportDir}"/staker_balances.json.new "${bakerStatsExportDir}"/staker_balances.json
+  ${findutils}/bin/xargs ${coreutils}/bin/printf "$outputDir/block/%s/staker_balances.json\0" |
+  ${findutils}/bin/xargs -0 ${jq}/bin/jq -s flatten > "$outputDir"/staker_balances.json.new
+${coreutils}/bin/mv "$outputDir"/staker_balances.json.new "$outputDir"/staker_balances.json
 
-jq -s 'flatten | group_by([ .staker, .cycle ]) | map(add)' "${bakerStatsExportDir}"/rewards.json "${bakerStatsExportDir}"/staker_balances.json \
-  > "${bakerStatsExportDir}"/staker_data.json
+jq -s 'flatten | group_by([ .staker, .cycle ]) | map(add)' "$outputDir"/rewards.json "$outputDir"/staker_balances.json \
+  > "$outputDir"/staker_data.json
 
 for i in delegate baking_rights endorsing_rights; do
-  ${coreutils}/bin/rm -f "${bakerStatsExportDir}"/$i.json
-  ${coreutils}/bin/ln -s block/$head/$i.json "${bakerStatsExportDir}"/$i.json
+  ${coreutils}/bin/rm -f "$outputDir"/$i.json
+  ${coreutils}/bin/ln -s block/$head/$i.json "$outputDir"/$i.json
 done
 
-${findutils}/bin/find "${bakerStatsExportDir}"/block -maxdepth 1 -path "${bakerStatsExportDir}/block/*" -print0 |
-  ${gnugrep}/bin/grep -zZvFf "${bakerStatsExportDir}"/blocks |
+${findutils}/bin/find "$outputDir"/block -maxdepth 1 -path "$outputDir/block/*" -print0 |
+  ${gnugrep}/bin/grep -zZvFf "$outputDir"/blocks |
   ${findutils}/bin/xargs -0 ${coreutils}/bin/rm -rf
 ''

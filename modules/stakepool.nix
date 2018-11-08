@@ -142,13 +142,16 @@ let
       };
     };
     stats-name = "tezos-${current.network}-baker-stats-${toString index}";
+    stats-script = pkgs.writeScript "tezos-baker-stats.sh" (import ./tezos-baker-stats.sh.nix {
+      inherit index kit;
+      inherit (current) bakerDir;
+      inherit (pkgs) coreutils findutils gawk gnugrep jq tcl;
+    });
     stats-value = {
       description = "Tezos ${current.network} baker stats export";
-      script = import ./tezos-baker-stats.sh.nix {
-        inherit index kit;
-        inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir;
-        inherit (pkgs) coreutils findutils gawk gnugrep jq tcl;
-      };
+      script = ''
+        exec ${stats-script} "${current.bakerStatsExportDir}" "${current.bakerAddressAlias}"
+      '';
       serviceConfig = {
         ExecStartPre = monitorBootstrapped;
         User = current.user;
