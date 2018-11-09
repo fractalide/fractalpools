@@ -16,13 +16,14 @@ set -o pipefail
 
 export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=y
 
-if (( $# != 2 )); then
-  echo >&2 "Usage: ''${BASH_SOURCE[0]#*/} <output directory> <account address or name>"
+if (( $# != 3 )); then
+  echo >&2 "Usage: ''${BASH_SOURCE[0]#*/} <output directory> <account address or name> <fee percentage>"
   exit 2
 fi
 
 outputDir=$1
 addressOrName=$2
+bakerFee=$3
 
 function client() {
   ${kit}/bin/tezos-client --base-dir '${bakerDir}' --addr localhost --port ${toString (8732 + index)} "$@"
@@ -120,7 +121,7 @@ for block in ''${blocks[*]}; do
   echo '[]' > "$freeze_cycle_dir"/rewards.json.new
   for staker in ''${stakers[*]}; do
     staker_balance=$(jq -r --arg staker $staker '.[$staker]' < "$snap_cycle_dir"/stakes.json)
-    staker_rewards=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance]")
+    staker_rewards=$(${tcl}/bin/tclsh <<< "puts [expr $total_rewards * $staker_balance / $total_staking_balance * (100 - $bakerFee) / 100]")
     jq --arg staker $staker --arg rewards $staker_rewards --argjson cycle $rewards_cycle \
       '. += [ { staker: $staker, cycle: $cycle, rewards: $rewards } ]' \
       < "$freeze_cycle_dir"/rewards.json.new > "$freeze_cycle_dir"/rewards.json.new.new

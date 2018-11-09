@@ -23,6 +23,11 @@ let
       type = types.str;
       description = "Where to store baker state.";
     };
+    bakerFee = mkOption {
+      default = 15;
+      type = types.int;
+      description = "Baker's fee, in percent";
+    };
     bakerStatsExportDir = mkOption {
       type = types.str;
       description = "Where to store exported baker stats.";
@@ -150,7 +155,7 @@ let
     stats-value = {
       description = "Tezos ${current.network} baker stats export";
       script = ''
-        exec ${stats-script} "${current.bakerStatsExportDir}" "${current.bakerAddressAlias}"
+        exec ${stats-script} "${current.bakerStatsExportDir}" "${current.bakerAddressAlias}" ${toString current.bakerFee}
       '';
       serviceConfig = {
         ExecStartPre = monitorBootstrapped;
