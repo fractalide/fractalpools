@@ -34,9 +34,9 @@ function jq() {
 }
 
 if (( ''${#addressOrName} == 36 )) && [[ ${addressOrName:0:3} = "tz1" ]]; then
-  address=$(client show address "$addressOrName" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
-else
   address=$addressOrName
+else
+  address=$(client show address "$addressOrName" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
 fi
 
 head=$(client rpc get /chains/main/blocks/head/hash | jq . -r)
