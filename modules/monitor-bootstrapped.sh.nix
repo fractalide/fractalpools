@@ -3,8 +3,10 @@
 , gnugrep
 , index
 , kit
+, writeScript
 }:
 
+writeScript "monitor-bootstrapped.sh"
 ''
 #!${bash}/bin/bash
 
