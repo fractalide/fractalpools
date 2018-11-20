@@ -47,7 +47,7 @@ function jq() {
   ${jq}/bin/jq "$@"
 }
 
-if (( ''${#addressOrName} == 36 )) && [[ ${addressOrName:0:3} = "tz1" ]]; then
+if (( ''${#addressOrName} == 36 )) && [[ ''${addressOrName:0:3} = "tz1" ]]; then
   address=$addressOrName
 else
   address=$(client show address "$addressOrName" | ${gawk}/bin/awk '$1 == "Hash:" { print $2 }')
