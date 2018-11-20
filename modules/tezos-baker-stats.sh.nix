@@ -1,4 +1,5 @@
 { bakerDir
+, bash
 , coreutils
 , findutils
 , gawk
@@ -12,6 +13,7 @@
 
 writeScript "tezos-baker-stats.sh"
 ''
+#!${bash}/bin/bash
 set -e
 set -u
 set -o pipefail
