@@ -7,8 +7,10 @@
 , jq
 , kit
 , tcl
+, writeScript
 }:
 
+writeScript "tezos-baker-stats.sh"
 ''
 set -e
 set -u

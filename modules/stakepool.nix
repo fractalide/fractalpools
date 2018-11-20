@@ -61,10 +61,10 @@ let
     current = builtins.head nodes;
     inherit (tezos-baking-platform.tezos."${current.network}") kit;
     tzscanUrl = tzscanUrls."${current.network}";
-    monitorBootstrapped = current.pkgs.writeScript "monitor-bootstrapped.sh" (callPackage ./monitor-bootstrapped.sh.nix {
+    monitorBootstrapped = callPackage ./monitor-bootstrapped.sh.nix {
       inherit kit index;
       inherit (current) bakerDir;
-    });
+    };
     inherit (current.pkgs.callPackage ../pkgs {}) callPackage;
     tezos-baking-platform = callPackage (import ../pins/tezos-baking-platform) {};
     init-name = "tezos-${current.network}-init-${toString index}";
@@ -145,10 +145,10 @@ let
       };
     };
     stats-name = "tezos-${current.network}-baker-stats-${toString index}";
-    stats-script = current.pkgs.writeScript "tezos-baker-stats.sh" (callPackage ./tezos-baker-stats.sh.nix {
+    stats-script = callPackage ./tezos-baker-stats.sh.nix {
       inherit index kit;
       inherit (current) bakerDir;
-    });
+    };
     stats-value = {
       description = "Tezos ${current.network} baker stats export";
       script = ''
