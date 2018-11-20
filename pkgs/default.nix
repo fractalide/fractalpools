@@ -1,11 +1,9 @@
 { pkgs ? import (import ../pins/nixpkgs) {}
+, lib ? pkgs.lib
 , newScope ? pkgs.newScope
 }:
 
-let inherit (pkgs) lib; in
-
-lib.fix' (self: {
-  callPackage = newScope self;
+lib.makeScope newScope (self: with self; {
   backerei-src = import ../pins/backerei;
-  inherit (self.callPackage (self.backerei-src + /release.nix) {}) backerei;
+  inherit (callPackage (backerei-src + /release.nix) {}) backerei;
 })
