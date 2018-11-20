@@ -28,6 +28,14 @@ let
       type = types.int;
       description = "Baker's fee, in percent";
     };
+    bakerPaymentsFrom = mkOption {
+      type = types.str;
+      description = "The hash of the account paying rewards to stakers";
+    };
+    bakerPaymentsFromName = mkOption {
+      type = types.str;
+      description = "The human-readable name of the account paying rewards to stakers";
+    };
     bakerStatsExportDir = mkOption {
       type = types.str;
       description = "Where to store exported baker stats.";
@@ -152,7 +160,8 @@ let
     stats-value = {
       description = "Tezos ${current.network} baker stats export";
       script = ''
-        exec ${stats-script} "${current.bakerStatsExportDir}" "${current.bakerAddressAlias}" ${toString current.bakerFee}
+        exec ${stats-script} "${current.bakerStatsExportDir}" "${current.bakerAddressAlias}" ${toString current.bakerFee} \
+          --from ${current.bakerPaymentsFrom} --from-name ${current.bakerPaymentsFromName}
       '';
       serviceConfig = {
         ExecStartPre = monitorBootstrapped;
