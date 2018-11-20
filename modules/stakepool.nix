@@ -61,20 +61,19 @@ let
     current = builtins.head nodes;
     inherit (tezos-baking-platform.tezos."${current.network}") kit;
     tzscanUrl = tzscanUrls."${current.network}";
-    monitorBootstrapped = pkgs.writeScript "monitor-bootstrapped.sh" (pkgs.callPackage ./monitor-bootstrapped.sh.nix {
+    monitorBootstrapped = current.pkgs.writeScript "monitor-bootstrapped.sh" (callPackage ./monitor-bootstrapped.sh.nix {
       inherit kit index;
       inherit (current) bakerDir;
     });
-    pkgs = current.pkgs;
-    tezos-baking-platform = pkgs.callPackage (import ../pins/tezos-baking-platform) {};
+    inherit (current.pkgs.callPackage ../pkgs {}) callPackage;
+    tezos-baking-platform = callPackage (import ../pins/tezos-baking-platform) {};
     init-name = "tezos-${current.network}-init-${toString index}";
     init-value = {
       description = "Tezos ${current.network} initialization";
-      script = import ./tezos-init.sh.nix {
+      script = callPackage ./tezos-init.sh.nix {
         inherit kit;
         inherit (current) bakerAddressAlias bakerDir bakerStatsExportDir configDir user;
         baking = current.baking.enable;
-        inherit (pkgs) runit;
       };
       after = [ "local-fs.target" ];
       serviceConfig = {
@@ -85,10 +84,9 @@ let
     run-name = "tezos-${current.network}-run-${toString index}";
     run-value = {
       description = "Tezos ${current.network} node";
-      script = import ./tezos-run.sh.nix {
+      script = callPackage ./tezos-run.sh.nix {
         inherit (current) configDir;
         inherit index kit tzscanUrl;
-        inherit (pkgs) coreutils curl findutils gnugrep gnused;
       };
       wantedBy = [ "multi-user.target" ];
       after = [ "${init-name}.service" ];
@@ -101,7 +99,7 @@ let
     accuser-name = "tezos-${current.network}-accuser-${toString index}";
     accuser-value = {
       description = "Tezos ${current.network} accuser";
-      script = import ./tezos-accuser.sh.nix {
+      script = callPackage ./tezos-accuser.sh.nix {
         inherit index kit;
         inherit (current) bakerDir;
       };
@@ -117,7 +115,7 @@ let
     baker-name = "tezos-${current.network}-baker-${toString index}";
     baker-value = {
       description = "Tezos ${current.network} baker";
-      script = import ./tezos-baker.sh.nix {
+      script = callPackage ./tezos-baker.sh.nix {
         inherit index kit;
         inherit (current) bakerAddressAlias bakerDir configDir;
       };
@@ -133,7 +131,7 @@ let
     endorser-name = "tezos-${current.network}-endorser-${toString index}";
     endorser-value = {
       description = "Tezos ${current.network} endorser";
-      script = import ./tezos-endorser.sh.nix {
+      script = callPackage ./tezos-endorser.sh.nix {
         inherit index kit;
         inherit (current) bakerAddressAlias bakerDir;
       };
@@ -147,10 +145,9 @@ let
       };
     };
     stats-name = "tezos-${current.network}-baker-stats-${toString index}";
-    stats-script = pkgs.writeScript "tezos-baker-stats.sh" (import ./tezos-baker-stats.sh.nix {
+    stats-script = current.pkgs.writeScript "tezos-baker-stats.sh" (callPackage ./tezos-baker-stats.sh.nix {
       inherit index kit;
       inherit (current) bakerDir;
-      inherit (pkgs) coreutils findutils gawk gnugrep jq tcl;
     });
     stats-value = {
       description = "Tezos ${current.network} baker stats export";
