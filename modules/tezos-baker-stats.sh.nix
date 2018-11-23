@@ -92,7 +92,7 @@ done
 printf "%s\n" "''${blocks[@]}" > "$outputDir"/blocks
 
 if [[ -n $first_delegate_cycle ]]; then
-  backereiConfDir=$(${coreutils}/bin/mktemp --directory backerei-XXXXXXXXXXXX)
+  backereiConfDir=$(${coreutils}/bin/mktemp --tmpdir --directory backerei-XXXXXXXXXXXX)
   trap "rm -r '$backereiConfDir'" EXIT
 
   ${backerei}/bin/backerei --config "$backereiConfDir/backerei.yaml" init \
