@@ -35,9 +35,6 @@ addressOrName=$2
 bakerFee=$3
 argv=( "$@" )
 init_parameters=( "''${argv[@]:$NUM_REQUIRED_PARAMS}" )
-printf >&2 "init_parameters "
-printf >&2 "'%s' " "''${init_parameters[@]}"
-echo >&2
 
 function client() {
   ${kit}/bin/tezos-client --base-dir '${bakerDir}' --addr localhost --port ${toString (8732 + index)} "$@"
