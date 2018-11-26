@@ -3,16 +3,21 @@
 
 set -euo pipefail
 
-URL=https://gitlab.com/clacke/tezos-baking-platform.git
-DEFAULT_REV=refs/heads/develop
-
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-rev=${1:-$DEFAULT_REV}
+url_pattern='[^"]*"url": "([^"]*)"'
+url=
+while IFS='' read -r line; do
+  [[ $line =~ $url_pattern ]] || continue
+  url=${BASH_REMATCH[1]}
+  break
+done < default.json
+
+rev=${1:-HEAD}
 
 if (( ${#rev} != 40 )); then
-  rev=$(git ls-remote $URL | awk '$2 == "'"$rev"'" { print $1 }')
+  rev=$(git ls-remote $url "$rev" | awk '{ print $1 }')
 fi
 
-nix-prefetch-git $URL $rev > default.json.new
+nix-prefetch-git $url $rev > default.json.new
 mv default.json{.new,}
