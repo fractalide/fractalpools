@@ -15,6 +15,6 @@ if ! ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | gre
   ${kit}/bin/tezos-client --base-dir "${bakerDir}" list known addresses | grep -E '^${bakerAddressAlias}: '
 fi
 
-exec ${kit}/bin/tezos-baker-003-PsddFKi3 --base-dir "${bakerDir}" --addr localhost --port ${toString (8732 + index)} \
+exec ${kit}/bin/tezos-baker-002-PsYLVpVv --base-dir "${bakerDir}" --addr localhost --port ${toString (8732 + index)} \
   run with local node "${configDir}" "${bakerAddressAlias}"
 ''
