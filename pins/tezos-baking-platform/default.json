@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/fractalide/tezos-baking-platform",
-  "rev": "0aa7440eeb2ab1fcf2994724101d9554103dcf30",
-  "date": "2018-12-01T14:15:41-03:00",
-  "sha256": "1axvypfbkih6hcvib8m081y5ixfqhyyybvva5f3mb4kgld3gmjfi",
+  "rev": "969fc80de03fbaef078cb6030916f72136ccdf89",
+  "date": "2018-12-24T13:12:21+00:00",
+  "sha256": "0ydx4xpij6i1yb49jzjiiapkiqz12az1mc5gwc3c1qiwldpqw0cf",
   "fetchSubmodules": false
 }
