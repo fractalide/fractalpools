@@ -120,22 +120,6 @@ let
         User = current.user;
       };
     };
-    accuser-name-old = "tezos-${current.network}-accuser-old-${toString index}";
-    accuser-value-old = {
-      description = "Tezos ${current.network} accuser (legacy)";
-      script = callPackage ./tezos-accuser-old.sh.nix {
-        inherit index kit;
-        inherit (current) bakerDir;
-      };
-      wantedBy = [ "multi-user.target" ];
-      after = [ "${run-name}.service" ];
-      wants = [ "${run-name}.service" ];
-      serviceConfig = {
-        ExecStartPre = monitorBootstrapped;
-        Restart = "always";
-        User = current.user;
-      };
-    };
     baker-name = "tezos-${current.network}-baker-${toString index}";
     baker-value = {
       description = "Tezos ${current.network} baker";
@@ -152,42 +136,10 @@ let
         User = current.user;
       };
     };
-    baker-name-old = "tezos-${current.network}-baker-old-${toString index}";
-    baker-value-old = {
-      description = "Tezos ${current.network} baker (legacy)";
-      script = callPackage ./tezos-baker-old.sh.nix {
-        inherit index kit;
-        inherit (current) bakerAddressAlias bakerDir configDir;
-      };
-      wantedBy = [ "multi-user.target" ];
-      after = [ "${run-name}.service" ];
-      wants = [ "${run-name}.service" ];
-      serviceConfig = {
-        ExecStartPre = monitorBootstrapped;
-        Restart = "always";
-        User = current.user;
-      };
-    };
     endorser-name = "tezos-${current.network}-endorser-${toString index}";
     endorser-value = {
       description = "Tezos ${current.network} endorser";
       script = callPackage ./tezos-endorser.sh.nix {
-        inherit index kit;
-        inherit (current) bakerAddressAlias bakerDir;
-      };
-      wantedBy = [ "multi-user.target" ];
-      after = [ "${run-name}.service" ];
-      wants = [ "${run-name}.service" ];
-      serviceConfig = {
-        ExecStartPre = monitorBootstrapped;
-        Restart = "always";
-        User = current.user;
-      };
-    };
-    endorser-name-old = "tezos-${current.network}-endorser-old-${toString index}";
-    endorser-value-old = {
-      description = "Tezos ${current.network} endorser (legacy)";
-      script = callPackage ./tezos-endorser-old.sh.nix {
         inherit index kit;
         inherit (current) bakerAddressAlias bakerDir;
       };
@@ -226,9 +178,6 @@ let
       "${baker-name}" = baker-value;
       "${endorser-name}" = endorser-value;
       "${stats-name}" = stats-value;
-      "${accuser-name-old}" = accuser-value-old;
-      "${baker-name-old}" = baker-value-old;
-      "${endorser-name-old}" = endorser-value-old;
     });
 in
 {
