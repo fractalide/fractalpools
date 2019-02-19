@@ -152,7 +152,7 @@ let
         User = current.user;
       };
     };
-    stats-name = "tezos-${current.network}-baker-stats-${toString index}";
+    /* stats-name = "tezos-${current.network}-baker-stats-${toString index}";
     stats-script = callPackage ./tezos-baker-stats.sh.nix {
       inherit index kit;
       inherit (current) bakerDir;
@@ -168,7 +168,7 @@ let
         User = current.user;
       };
       startAt = "*:07";
-    };
+    }; */
   in
     makeServiceEntries (index + 1) (builtins.tail nodes) (done // {
       "${init-name}" = init-value;
@@ -177,7 +177,7 @@ let
       "${accuser-name}" = accuser-value;
       "${baker-name}" = baker-value;
       "${endorser-name}" = endorser-value;
-      "${stats-name}" = stats-value;
+      #"${stats-name}" = stats-value;
     });
 in
 {
